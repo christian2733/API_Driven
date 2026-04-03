@@ -51,9 +51,76 @@ Séquence 3 : Exercice
 Objectif : Piloter une instance EC2 via API Gateway
 Difficulté : Moyen/Difficile (~2h)
 ---------------------------------------------------  
-Votre mission (si vous l'acceptez) : Concevoir une architecture **API-driven** dans laquelle une requête HTTP déclenche, via **API Gateway** et une **fonction Lambda**, lancera ou stopera une **instance EC2** déposée dans **environnement AWS simulé avec LocalStack** et qui sera exécuté dans **GitHub Codespaces**. [Option] Remplacez l'instance EC2 par l'arrêt ou le lancement d'un Docker.  
+🚀 Atelier : API-Driven Infrastructure (LocalStack)
+📋 Description du Projet
+L'objectif de cet atelier est de concevoir une architecture Serverless capable de piloter dynamiquement des ressources d'infrastructure (instances EC2) via des appels API, le tout dans un environnement émulé avec LocalStack au sein de GitHub Codespaces.
 
-**Architecture cible :** Ci-dessous, l'architecture cible souhaitée.   
+L'idée centrale est de s'affranchir de toute console graphique (AWS Console) pour interagir avec le Cloud uniquement par le code et les requêtes HTTP.
+
+🏗️ Architecture Cible
+Le flux de données suit ce parcours :
+
+Client : Envoie une requête HTTP POST avec une instruction JSON.
+
+Endpoint API : Reçoit la requête sur le port 4566.
+
+AWS Lambda : Fonction Python (boto3) qui traite l'instruction.
+
+AWS EC2 : L'instance change d'état (start ou stop) selon l'ordre reçu.
+
+🛠️ Configuration de l'Environnement
+1. Initialisation de LocalStack
+Dans le terminal du Codespace, exécutez les commandes suivantes pour démarrer l'émulateur avec les fonctionnalités avancées :
+
+
+# Activation du Token LocalStack
+```
+export LOCALSTACK_AUTH_TOKEN="ls-vaCOfAxo-ciZu-koWe-3102-nOza5540ad00"
+```
+
+# Démarrage du service
+localstack start -d
+2. Définition de l'Endpoint
+Pour faciliter les tests, nous utilisons une variable d'environnement pour l'URL de l'API :
+
+```
+export ENDPOINT="https://expert-space-funicular-7vww4jjxvgq4hqxw-4566.app.github.dev"
+```
+(Note : Assurez-vous que le port 4566 est réglé sur "Public" dans l'onglet PORTS).
+
+🚀 Guide d'Utilisation (Pilotage par API)
+Voici les commandes curl pour interagir avec l'infrastructure de manière programmable.
+
+🟢 Démarrer l'instance EC2
+Envoie l'ordre de démarrage à la Lambda :
+
+```
+curl -X POST $ENDPOINT/ -H "Content-Type: application/json" -d '{"action": "start"}'
+```
+🔴 Stopper l'instance EC2
+Envoie l'ordre d'arrêt à la Lambda :
+
+```
+curl -X POST $ENDPOINT/ -H "Content-Type: application/json" -d '{"action": "stop"}'
+```
+🔍 Vérifier le Statut
+Demande l'état actuel via l'API :
+
+```
+curl -X POST $ENDPOINT/ -H "Content-Type: application/json" -d '{"action": "status"}'
+```
+🧪 Vérification Technique (Preuve de Concept)
+Pour valider que l'API a bien modifié l'infrastructure réelle, utilisez la commande suivante pour interroger directement le service EC2 de LocalStack :
+
+```
+awslocal ec2 describe-instances --instance-ids i-0824c42ba26583dab --query "Reservations[*].Instances[*].State.Name"
+```
+🧠 Défis Techniques Résolus
+Gestion du format binaire : Utilisation de --cli-binary-format raw-in-base64-out pour permettre l'invocation correcte de la Lambda via l'AWS CLI.
+
+Communication Inter-Services : Configuration de l' endpoint_url dans le script Python pour permettre à la Lambda de communiquer avec EC2 à l'intérieur du conteneur LocalStack.
+
+Exposition Publique : Tunneling du port 4566 via GitHub Codespaces pour rendre l'API accessible à distance.  
   
 ![Screenshot Actions](API_Driven.png)   
   
