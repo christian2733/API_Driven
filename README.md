@@ -77,7 +77,67 @@ Dans le terminal du Codespace, exécutez les commandes suivantes pour démarrer 
 ```
 export LOCALSTACK_AUTH_TOKEN="ls-vaCOfAxo-ciZu-koWe-3102-nOza5540ad00"
 ```
+💻 Étape 2 : Création de l'Infrastructure Cible
+1. Lancement de l'instance EC2
+Bash
+awslocal ec2 run-instances --image-id ami-03cf127a --count 1 --instance-type t2.micro
+L'ID généré pour ce projet est : i-0824c42ba26583dab
 
+🐍 Étape 3 : Développement de la Logique (Lambda & Boto3)
+Fichier : lambda_function.py
+Ce code utilise la bibliothèque Boto3 pour envoyer des ordres au SDK AWS simulé.
+
+Python
+import boto3
+import os
+import json
+
+def lambda_handler(event, context):
+    # Identifiant de notre instance cible
+    INSTANCE_ID = "i-0824c42ba26583dab"
+    
+    # Configuration du client Boto3 pour pointer vers LocalStack
+    endpoint = f"http://{os.environ['LOCALSTACK_HOSTNAME']}:4566"
+    ec2 = boto3.client('ec2', endpoint_url=endpoint)
+    
+    # Extraction de l'action depuis le corps de la requête HTTP
+    try:
+        body = json.loads(event.get('body', '{}'))
+        action = body.get('action', 'status')
+    except:
+        action = 'status'
+
+    # Logique de pilotage
+    if action == 'start':
+        ec2.start_instances(InstanceIds=[INSTANCE_ID])
+        res = f"Instance {INSTANCE_ID} démarrée avec succès."
+    elif action == 'stop':
+        ec2.stop_instances(InstanceIds=[INSTANCE_ID])
+        res = f"Instance {INSTANCE_ID} arrêtée avec succès."
+    elif action == 'status':
+        data = ec2.describe_instances(InstanceIds=[INSTANCE_ID])
+        etat = data['Reservations'][0]['Instances'][0]['State']['Name']
+        res = f"L'état actuel de l'instance est : {etat}"
+    else:
+        res = "Erreur : Action non reconnue (utilisez start, stop ou status)."
+
+    return {
+        "statusCode": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"message": res})
+    }
+🚀 Étape 4 : Déploiement et Pilotage API
+1. Déployer la Lambda
+Bash
+zip function.zip lambda_function.py
+
+awslocal lambda create-function \
+    --function-name ControlEC2 \
+    --runtime python3.9 \
+    --zip-file fileb://function.zip \
+    --handler lambda_function.lambda_handler \
+    --role arn:aws:iam::000000000000:role/admin
+    
 # Démarrage du service
 localstack start -d
 2. Définition de l'Endpoint
