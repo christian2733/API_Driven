@@ -79,8 +79,9 @@ export LOCALSTACK_AUTH_TOKEN="ls-vaCOfAxo-ciZu-koWe-3102-nOza5540ad00"
 ```
 💻 Étape 2 : Création de l'Infrastructure Cible
 1. Lancement de l'instance EC2
-Bash
+```
 awslocal ec2 run-instances --image-id ami-03cf127a --count 1 --instance-type t2.micro
+```
 L'ID généré pour ce projet est : i-0824c42ba26583dab
 
 🐍 Étape 3 : Développement de la Logique (Lambda & Boto3)
@@ -130,14 +131,14 @@ def lambda_handler(event, context):
 1. Déployer la Lambda
 Bash
 zip function.zip lambda_function.py
-
+```
 awslocal lambda create-function \
     --function-name ControlEC2 \
     --runtime python3.9 \
     --zip-file fileb://function.zip \
     --handler lambda_function.lambda_handler \
     --role arn:aws:iam::000000000000:role/admin
-    
+ ```   
 # Démarrage du service
 localstack start -d
 2. Définition de l'Endpoint
